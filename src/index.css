@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core palette - Calming sage & teal health theme */
+    --background: 150 20% 98%;
+    --foreground: 160 25% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 160 25% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 25% 10%;
+    --primary: 168 50% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 18% 93%;
+    --secondary-foreground: 160 25% 15%;
+    --muted: 150 14% 94%;
+    --muted-foreground: 160 10% 45%;
+    --accent: 150 18% 90%;
+    --accent-foreground: 160 25% 15%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 15% 90%;
+    --input: 150 15% 88%;
+    --ring: 168 50% 38%;
+    --radius: 0.75rem;
+
+    /* Extended health palette */
+    --sage: 150 25% 55%;
+    --sage-light: 150 30% 92%;
+    --sage-dark: 150 30% 35%;
+    --teal: 168 50% 38%;
+    --teal-light: 168 45% 92%;
+    --amber: 38 92% 50%;
+    --amber-light: 38 90% 92%;
+    --rose: 350 70% 55%;
+    --rose-light: 350 70% 93%;
+    --lavender: 260 50% 60%;
+    --lavender-light: 260 50% 93%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(168 50% 38%), hsl(150 40% 50%));
+    --gradient-hero: linear-gradient(135deg, hsl(150 20% 98%), hsl(168 30% 94%));
+    --gradient-card-sage: linear-gradient(145deg, hsl(150 30% 95%), hsl(150 25% 98%));
+    --gradient-card-teal: linear-gradient(145deg, hsl(168 35% 94%), hsl(168 25% 98%));
+    --gradient-card-amber: linear-gradient(145deg, hsl(38 80% 95%), hsl(38 60% 98%));
+    --gradient-card-rose: linear-gradient(145deg, hsl(350 60% 96%), hsl(350 50% 98%));
+    --gradient-card-lavender: linear-gradient(145deg, hsl(260 40% 96%), hsl(260 30% 98%));
+
+    /* Shadows */
+    --shadow-elegant: 0 4px 24px -4px hsl(168 50% 38% / 0.12);
+    --shadow-glow: 0 0 20px hsl(168 50% 38% / 0.2);
+    --shadow-glow-lg: 0 0 32px hsl(168 50% 38% / 0.3);
+    --shadow-card: 0 1px 3px hsl(160 20% 10% / 0.04), 0 4px 12px hsl(160 20% 10% / 0.03);
+    --shadow-card-hover: 0 4px 16px hsl(160 20% 10% / 0.08), 0 8px 24px hsl(160 20% 10% / 0.04);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  .gradient-card-sage {
+    background: var(--gradient-card-sage);
+  }
+  .gradient-card-teal {
+    background: var(--gradient-card-teal);
+  }
+  .gradient-card-amber {
+    background: var(--gradient-card-amber);
+  }
+  .gradient-card-rose {
+    background: var(--gradient-card-rose);
+  }
+  .gradient-card-lavender {
+    background: var(--gradient-card-lavender);
+  }
+  .text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .shadow-card-interactive {
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .shadow-card-interactive:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+  .stagger-7 { animation-delay: 0.35s; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.35);
+}
