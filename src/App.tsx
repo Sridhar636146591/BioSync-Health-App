@@ -38,13 +38,30 @@ function App() {
     const auth = localStorage.getItem('biosync_auth')
     if (auth) {
       const { user } = JSON.parse(auth)
+      console.log('App.tsx - User logged in:', user.email)
+      
       // Check if user already has health data
       const userHealthKey = `vitalis-health-data-${user.email}`
       const existingData = localStorage.getItem(userHealthKey)
       
+      console.log('App.tsx - Health key:', userHealthKey)
+      console.log('App.tsx - Has existing data:', existingData ? 'YES' : 'NO')
+      
       // Only seed if no data exists
       if (!existingData) {
+        console.log('App.tsx - Seeding demo data...')
         seedDemoData()
+        
+        // Verify seeding worked
+        const afterSeed = localStorage.getItem(userHealthKey)
+        console.log('App.tsx - After seeding, data exists:', afterSeed ? 'YES' : 'NO')
+        if (afterSeed) {
+          const entries = JSON.parse(afterSeed)
+          console.log('App.tsx - Seeded entry count:', entries.length)
+        }
+      } else {
+        const entries = JSON.parse(existingData)
+        console.log('App.tsx - User already has', entries.length, 'entries')
       }
     }
     setAuthChecked(true)
