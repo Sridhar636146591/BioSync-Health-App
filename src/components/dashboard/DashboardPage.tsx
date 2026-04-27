@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Moon, Smile, Droplets, Dumbbell, TrendingUp, Plus, Brain, Users, Box, Zap, Footprints, Target, Activity, Calendar, UtensilsCrossed } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,12 +12,24 @@ import { WaterTargetChart } from './WaterTargetChart'
 import { HealthRadarChart } from './HealthRadarChart'
 import { WeeklyComparisonChart } from './WeeklyComparisonChart'
 import { HydrationTimeline } from './HydrationTimeline'
-import { getLast7DaysEntries, getLast30DaysEntries, getWeekSummary, getEntryByDate, getToday, generateInsights, calculateHealthScore, calculateStreak, calculateDetailedHealthScore } from '@/lib/store'
+import { getLast7DaysEntries, getLast30DaysEntries, getWeekSummary, getEntryByDate, getToday, generateInsights, calculateHealthScore, calculateStreak, calculateDetailedHealthScore, ensureDemoDataForCurrentUser } from '@/lib/store'
 import { cn } from '@/lib/utils'
 
 export function DashboardPage() {
   const [range, setRange] = useState<'today' | '7d' | '30d'>('7d')
   const navigate = useNavigate()
+  
+  // Ensure demo data exists when dashboard loads
+  useEffect(() => {
+    console.log('Dashboard - Checking for demo data...')
+    const seeded = ensureDemoDataForCurrentUser()
+    if (seeded) {
+      console.log('Dashboard - Demo data was seeded, reloading...')
+      // Force re-render by changing range briefly
+      setRange('30d')
+    }
+  }, [])
+  
   const entries = range === 'today' 
     ? (getEntryByDate(getToday()) ? [getEntryByDate(getToday())!] : []) 
     : range === '7d' 

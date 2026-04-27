@@ -411,15 +411,19 @@ export function generateInsights(entries: HealthEntry[]): Insight[] {
   return insights;
 }
 
-export function seedDemoData(): void {
+export function seedDemoData(forceSeed: boolean = false): void {
   const existing = loadEntries();
   console.log('seedDemoData - Existing entries:', existing.length);
-  if (existing.length > 0) {
+  console.log('seedDemoData - Storage key:', getUserStorageKey());
+  console.log('seedDemoData - Force seed:', forceSeed);
+  
+  // If forceSeed is true OR no data exists, seed the data
+  if (forceSeed || existing.length === 0) {
+    console.log('seedDemoData - Starting to seed 30 days of demo data...');
+  } else {
     console.log('seedDemoData - Data already exists, skipping');
     return;
   }
-  
-  console.log('seedDemoData - Starting to seed 30 days of demo data...');
 
   const symptoms = ['Headache', 'Fatigue', 'Back pain', 'Anxiety', 'Bloating'];
   const entries: HealthEntry[] = [];
@@ -501,6 +505,31 @@ export function seedDemoData(): void {
   saveEntries(entries);
   console.log('seedDemoData - Successfully saved', entries.length, 'entries');
   console.log('seedDemoData - Storage key:', getUserStorageKey());
+}
+
+// Helper to ensure user has demo data (call this from anywhere)
+export function ensureDemoDataForCurrentUser(): boolean {
+  const auth = localStorage.getItem('biosync_auth');
+  if (!auth) {
+    console.log('ensureDemoData - No user authenticated');
+    return false;
+  }
+  
+  const { user } = JSON.parse(auth);
+  const userHealthKey = `vitalis-health-data-${user.email}`;
+  const existingData = localStorage.getItem(userHealthKey);
+  
+  console.log('ensureDemoData - User:', user.email);
+  console.log('ensureDemoData - Has data:', existingData ? 'YES' : 'NO');
+  
+  if (!existingData || JSON.parse(existingData || '[]').length === 0) {
+    console.log('ensureDemoData - Seeding demo data now');
+    seedDemoData();
+    return true;
+  }
+  
+  console.log('ensureDemoData - Data already exists');
+  return false;
 }
 
 export const MOOD_LABELS: Record<number, string> = {
