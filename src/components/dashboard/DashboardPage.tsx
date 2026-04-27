@@ -16,9 +16,13 @@ import { getLast7DaysEntries, getLast30DaysEntries, getWeekSummary, getEntryByDa
 import { cn } from '@/lib/utils'
 
 export function DashboardPage() {
-  const [range, setRange] = useState<'7d' | '30d'>('7d')
+  const [range, setRange] = useState<'today' | '7d' | '30d'>('7d')
   const navigate = useNavigate()
-  const entries = range === '7d' ? getLast7DaysEntries() : getLast30DaysEntries()
+  const entries = range === 'today' 
+    ? (getEntryByDate(getToday()) ? [getEntryByDate(getToday())!] : []) 
+    : range === '7d' 
+      ? getLast7DaysEntries() 
+      : getLast30DaysEntries()
   const allEntries = getLast30DaysEntries() // Always use 30 days for health score
   const summary = getWeekSummary(entries)
   const todayEntry = getEntryByDate(getToday())
@@ -106,6 +110,15 @@ export function DashboardPage() {
 
       {/* Time range toggle */}
       <div className="flex items-center gap-2">
+        <button
+          onClick={() => setRange('today')}
+          className={cn(
+            'px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
+            range === 'today' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
+          )}
+        >
+          Today
+        </button>
         <button
           onClick={() => setRange('7d')}
           className={cn(
