@@ -34,12 +34,16 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
-    // Only seed demo data if user is logged in as demo user
+    // Only seed demo data if user is logged in and has no data
     const auth = localStorage.getItem('biosync_auth')
     if (auth) {
       const { user } = JSON.parse(auth)
-      // Seed demo data only for demo user
-      if (user.email === 'demo@biosync.health') {
+      // Check if user already has health data
+      const userHealthKey = `vitalis-health-data-${user.email}`
+      const existingData = localStorage.getItem(userHealthKey)
+      
+      // Only seed if no data exists
+      if (!existingData) {
         seedDemoData()
       }
     }

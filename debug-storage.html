@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioSync - LocalStorage Debugger</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .key {
+            font-weight: bold;
+            color: #2563eb;
+            margin: 10px 0 5px 0;
+        }
+        .value {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 BioSync LocalStorage Debugger</h1>
+    
+    <div class="section">
+        <h2>Actions</h2>
+        <button onclick="refreshData()">🔄 Refresh Data</button>
+        <button onclick="clearAllData()">🗑️ Clear All BioSync Data</button>
+        <button onclick="clearAuth()">🚪 Clear Auth Only</button>
+    </div>
+
+    <div id="authSection" class="section">
+        <h2>Authentication</h2>
+        <div id="authInfo"></div>
+    </div>
+
+    <div id="dataSection" class="section">
+        <h2>Health Data</h2>
+        <div id="healthDataInfo"></div>
+    </div>
+
+    <div id="usersSection" class="section">
+        <h2>Registered Users</h2>
+        <div id="usersInfo"></div>
+    </div>
+
+    <div id="friendsSection" class="section">
+        <h2>Friends & Requests</h2>
+        <div id="friendsInfo"></div>
+    </div>
+
+    <script>
+        function refreshData() {
+            // Auth
+            const auth = localStorage.getItem('biosync_auth');
+            const authDiv = document.getElementById('authInfo');
+            if (auth) {
+                const authData = JSON.parse(auth);
+                authDiv.innerHTML = `
+                    <div class="success">✅ User is authenticated</div>
+                    <div class="key">Auth Data:</div>
+                    <div class="value">${JSON.stringify(authData, null, 2)}</div>
+                    <div class="key">User Email:</div>
+                    <div class="value">${authData.user?.email || 'N/A'}</div>
+                `;
+                
+                // Check user's health data
+                if (authData.user?.email) {
+                    const healthKey = `vitalis-health-data-${authData.user.email}`;
+                    const healthData = localStorage.getItem(healthKey);
+                    const healthDiv = document.getElementById('healthDataInfo');
+                    
+                    if (healthData) {
+                        const entries = JSON.parse(healthData);
+                        healthDiv.innerHTML = `
+                            <div class="success">✅ Health data exists for ${authData.user.email}</div>
+                            <div class="key">Storage Key:</div>
+                            <div class="value">${healthKey}</div>
+                            <div class="key">Entry Count:</div>
+                            <div class="value">${entries.length} entries</div>
+                            <div class="key">First Entry:</div>
+                            <div class="value">${entries.length > 0 ? JSON.stringify(entries[0], null, 2) : 'No entries'}</div>
+                            <div class="key">Last Entry:</div>
+                            <div class="value">${entries.length > 0 ? JSON.stringify(entries[entries.length - 1], null, 2) : 'No entries'}</div>
+                        `;
+                    } else {
+                        healthDiv.innerHTML = `
+                            <div class="warning">⚠️ NO health data found for ${authData.user.email}</div>
+                            <div class="key">Expected Key:</div>
+                            <div class="value">${healthKey}</div>
+                        `;
+                    }
+                }
+            } else {
+                authDiv.innerHTML = `<div class="warning">⚠️ No user authenticated</div>`;
+            }
+
+            // Users
+            const users = localStorage.getItem('biosync_users');
+            const usersDiv = document.getElementById('usersInfo');
+            if (users) {
+                const usersData = JSON.parse(users);
+                usersDiv.innerHTML = `
+                    <div class="key">Registered Users (${usersData.length}):</div>
+                    <div class="value">${JSON.stringify(usersData, null, 2)}</div>
+                `;
+            } else {
+                usersDiv.innerHTML = `<div class="warning">⚠️ No registered users</div>`;
+            }
+
+            // Friends
+            const friends = localStorage.getItem('biosync-friends');
+            const requests = localStorage.getItem('biosync-friend-requests');
+            const friendsDiv = document.getElementById('friendsInfo');
+            friendsDiv.innerHTML = `
+                <div class="key">Friends:</div>
+                <div class="value">${friends || 'No friends data'}</div>
+                <div class="key">Friend Requests:</div>
+                <div class="value">${requests || 'No friend requests'}</div>
+            `;
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear ALL BioSync data? This cannot be undone!')) {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('biosync') || key.startsWith('vitalis'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+                alert(`Cleared ${keysToRemove.length} keys. Refreshing...`);
+                location.reload();
+            }
+        }
+
+        function clearAuth() {
+            localStorage.removeItem('biosync_auth');
+            alert('Auth cleared. Refreshing...');
+            location.reload();
+        }
+
+        // Load on startup
+        refreshData();
+    </script>
+</body>
+</html>

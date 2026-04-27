@@ -30,6 +30,12 @@ export function DashboardPage() {
   const topInsight = insights[0]
   const detailedScore = calculateDetailedHealthScore(allEntries)
 
+  // Debug logging
+  console.log('Dashboard loaded, entries count:', entries.length)
+  console.log('All entries (30d):', allEntries.length)
+  console.log('Summary:', summary)
+  console.log('Today entry:', todayEntry)
+
   return (
     <div className="space-y-8">
       {/* Hero */}

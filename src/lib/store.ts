@@ -413,7 +413,13 @@ export function generateInsights(entries: HealthEntry[]): Insight[] {
 
 export function seedDemoData(): void {
   const existing = loadEntries();
-  if (existing.length > 0) return;
+  console.log('seedDemoData - Existing entries:', existing.length);
+  if (existing.length > 0) {
+    console.log('seedDemoData - Data already exists, skipping');
+    return;
+  }
+  
+  console.log('seedDemoData - Starting to seed 30 days of demo data...');
 
   const symptoms = ['Headache', 'Fatigue', 'Back pain', 'Anxiety', 'Bloating'];
   const entries: HealthEntry[] = [];
@@ -493,6 +499,8 @@ export function seedDemoData(): void {
     });
   }
   saveEntries(entries);
+  console.log('seedDemoData - Successfully saved', entries.length, 'entries');
+  console.log('seedDemoData - Storage key:', getUserStorageKey());
 }
 
 export const MOOD_LABELS: Record<number, string> = {

@@ -73,10 +73,25 @@ export function LoginPage() {
       }
     }));
     
-    // Ensure user has a health data store
+    // Ensure user has demo health data
     const userHealthKey = `vitalis-health-data-${existingUser.email}`;
-    if (!localStorage.getItem(userHealthKey)) {
-      localStorage.setItem(userHealthKey, JSON.stringify([]));
+    const existingData = localStorage.getItem(userHealthKey);
+    console.log('Login - User health key:', userHealthKey);
+    console.log('Login - Existing data:', existingData ? 'YES' : 'NO');
+    
+    if (!existingData) {
+      // Import and seed demo data for the user
+      console.log('Login - Seeding demo data for user');
+      const { seedDemoData } = await import('@/lib/store');
+      seedDemoData();
+      
+      // Verify data was seeded
+      const newData = localStorage.getItem(userHealthKey);
+      console.log('Login - After seeding, data exists:', newData ? 'YES' : 'NO');
+      if (newData) {
+        const parsed = JSON.parse(newData);
+        console.log('Login - Seeded entries count:', parsed.length);
+      }
     }
     
     setIsLoading(false);
