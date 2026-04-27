@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Activity, Mail, Lock, Eye, EyeOff, ArrowRight, User, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { api } from '@/lib/api';
 
 export function SignupPage() {
   const navigate = useNavigate();
@@ -69,51 +70,33 @@ export function SignupPage() {
     
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Check if user already exists
-    const users = JSON.parse(localStorage.getItem('biosync_users') || '[]');
-    const existingUser = users.find((u: any) => u.email === formData.email);
-    
-    if (existingUser) {
-      setErrors({ email: 'An account with this email already exists' });
+    try {
+      // Call backend API to create user
+      const response = await api.signup(
+        formData.email,
+        formData.password,
+        formData.name,
+        formData.healthGoals
+      );
+      
+      // Store auth state in localStorage
+      localStorage.setItem('biosync_auth', JSON.stringify({
+        isAuthenticated: true,
+        user: {
+          email: response.user.email,
+          name: response.user.name,
+          avatar: response.user.avatar,
+          goals: response.user.goals,
+          joinedAt: response.user.joinedAt,
+        }
+      }));
+      
       setIsLoading(false);
-      return;
+      navigate('/');
+    } catch (error: any) {
+      setErrors({ email: error.message });
+      setIsLoading(false);
     }
-    
-    // Create new user
-    const newUser = {
-      email: formData.email,
-      password: formData.password,
-      name: formData.name,
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + formData.email,
-      goals: formData.healthGoals,
-      joinedAt: new Date().toISOString(),
-    };
-    
-    // Save to users list
-    users.push(newUser);
-    localStorage.setItem('biosync_users', JSON.stringify(users));
-    
-    // Initialize empty health data for new user
-    const userHealthKey = `vitalis-health-data-${formData.email}`;
-    localStorage.setItem(userHealthKey, JSON.stringify([]));
-    
-    // Store auth state
-    localStorage.setItem('biosync_auth', JSON.stringify({
-      isAuthenticated: true,
-      user: {
-        email: newUser.email,
-        name: newUser.name,
-        avatar: newUser.avatar,
-        goals: newUser.goals,
-        joinedAt: newUser.joinedAt,
-      }
-    }));
-    
-    setIsLoading(false);
-    navigate('/');
   };
 
   const toggleGoal = (goal: string) => {
