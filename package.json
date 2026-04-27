@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "npx vite",
-    "build": "tsc && npx vite build",
+    "build": "tsc && chmod +x node_modules/.bin/vite && npx vite build",
     "preview": "npx vite preview"
   },
   "dependencies": {
