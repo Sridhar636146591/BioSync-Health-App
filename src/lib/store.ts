@@ -42,6 +42,23 @@ export interface UserProfile {
   dietGoal?: 'lose' | 'maintain' | 'gain';
 }
 
+export interface FriendRequest {
+  from: string; // email
+  to: string; // email
+  timestamp: string;
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
+export interface Friend {
+  email: string;
+  name: string;
+  avatar?: string;
+  addedAt: string;
+  healthScore?: number;
+  streak?: number;
+  level?: string;
+}
+
 const PROFILE_KEY = 'biosync-profile';
 
 export function getUserProfile(): UserProfile | null {
@@ -689,4 +706,243 @@ export function calculateStreak(entries: HealthEntry[]): number {
   }
   
   return streak;
+}
+
+// ============ Friend System ============
+
+const FRIENDS_KEY = 'biosync-friends';
+const FRIEND_REQUESTS_KEY = 'biosync-friend-requests';
+
+// Get all registered users (from biosync_users)
+export function getAllRegisteredUsers(): UserProfile[] {
+  try {
+    const users = localStorage.getItem('biosync_users');
+    if (!users) return [];
+    return JSON.parse(users);
+  } catch {
+    return [];
+  }
+}
+
+// Get current user's email
+function getCurrentUserEmail(): string | null {
+  const auth = localStorage.getItem('biosync_auth');
+  if (!auth) return null;
+  const { user } = JSON.parse(auth);
+  return user.email;
+}
+
+// Get user's friends
+export function getFriends(): Friend[] {
+  const email = getCurrentUserEmail();
+  if (!email) return [];
+  
+  try {
+    const allFriends = localStorage.getItem(FRIENDS_KEY);
+    if (!allFriends) return [];
+    const friendsMap = JSON.parse(allFriends);
+    return friendsMap[email] || [];
+  } catch {
+    return [];
+  }
+}
+
+// Add friend
+export function addFriend(friendEmail: string): void {
+  const email = getCurrentUserEmail();
+  if (!email) return;
+  
+  const allFriends = localStorage.getItem(FRIENDS_KEY);
+  const friendsMap = allFriends ? JSON.parse(allFriends) : {};
+  
+  if (!friendsMap[email]) {
+    friendsMap[email] = [];
+  }
+  
+  // Check if already friends
+  const alreadyFriends = friendsMap[email].some((f: Friend) => f.email === friendEmail);
+  if (alreadyFriends) return;
+  
+  // Get friend's info
+  const users = getAllRegisteredUsers();
+  const friendUser = users.find(u => u.email === friendEmail);
+  if (!friendUser) return;
+  
+  // Get friend's health data
+  const healthKey = `vitalis-health-data-${friendEmail}`;
+  const healthData = localStorage.getItem(healthKey);
+  const entries: HealthEntry[] = healthData ? JSON.parse(healthData) : [];
+  const healthScore = entries.length > 0 ? calculateHealthScore(entries) : 0;
+  const streak = calculateStreak(entries);
+  const detailedScore = entries.length > 0 ? calculateDetailedHealthScore(entries) : null;
+  
+  friendsMap[email].push({
+    email: friendUser.email,
+    name: friendUser.name,
+    avatar: friendUser.avatar,
+    addedAt: new Date().toISOString(),
+    healthScore,
+    streak,
+    level: detailedScore?.level || 'Rookie',
+  });
+  
+  localStorage.setItem(FRIENDS_KEY, JSON.stringify(friendsMap));
+}
+
+// Remove friend
+export function removeFriend(friendEmail: string): void {
+  const email = getCurrentUserEmail();
+  if (!email) return;
+  
+  const allFriends = localStorage.getItem(FRIENDS_KEY);
+  if (!allFriends) return;
+  const friendsMap = JSON.parse(allFriends);
+  
+  if (friendsMap[email]) {
+    friendsMap[email] = friendsMap[email].filter((f: Friend) => f.email !== friendEmail);
+    localStorage.setItem(FRIENDS_KEY, JSON.stringify(friendsMap));
+  }
+}
+
+// Get pending friend requests (received)
+export function getPendingFriendRequests(): FriendRequest[] {
+  const email = getCurrentUserEmail();
+  if (!email) return [];
+  
+  try {
+    const requests = localStorage.getItem(FRIEND_REQUESTS_KEY);
+    if (!requests) return [];
+    const allRequests: FriendRequest[] = JSON.parse(requests);
+    return allRequests.filter(r => r.to === email && r.status === 'pending');
+  } catch {
+    return [];
+  }
+}
+
+// Send friend request
+export function sendFriendRequest(toEmail: string): boolean {
+  const email = getCurrentUserEmail();
+  if (!email || email === toEmail) return false;
+  
+  const requests = localStorage.getItem(FRIEND_REQUESTS_KEY);
+  const allRequests: FriendRequest[] = requests ? JSON.parse(requests) : [];
+  
+  // Check if request already exists
+  const exists = allRequests.some(
+    r => (r.from === email && r.to === toEmail) || (r.from === toEmail && r.to === email)
+  );
+  
+  if (exists) return false;
+  
+  allRequests.push({
+    from: email,
+    to: toEmail,
+    timestamp: new Date().toISOString(),
+    status: 'pending',
+  });
+  
+  localStorage.setItem(FRIEND_REQUESTS_KEY, JSON.stringify(allRequests));
+  return true;
+}
+
+// Accept friend request
+export function acceptFriendRequest(fromEmail: string): void {
+  const email = getCurrentUserEmail();
+  if (!email) return;
+  
+  // Update request status
+  const requests = localStorage.getItem(FRIEND_REQUESTS_KEY);
+  if (requests) {
+    const allRequests: FriendRequest[] = JSON.parse(requests);
+    const request = allRequests.find(r => r.from === fromEmail && r.to === email);
+    if (request) {
+      request.status = 'accepted';
+      localStorage.setItem(FRIEND_REQUESTS_KEY, JSON.stringify(allRequests));
+    }
+  }
+  
+  // Add as friend (bidirectional)
+  addFriend(fromEmail);
+  
+  // Also add current user to the other person's friends
+  const allFriends = localStorage.getItem(FRIENDS_KEY);
+  const friendsMap = allFriends ? JSON.parse(allFriends) : {};
+  
+  if (!friendsMap[fromEmail]) {
+    friendsMap[fromEmail] = [];
+  }
+  
+  const currentUser = getAllRegisteredUsers().find(u => u.email === email);
+  if (currentUser) {
+    const currentHealthKey = `vitalis-health-data-${email}`;
+    const currentHealthData = localStorage.getItem(currentHealthKey);
+    const currentEntries: HealthEntry[] = currentHealthData ? JSON.parse(currentHealthData) : [];
+    const currentHealthScore = currentEntries.length > 0 ? calculateHealthScore(currentEntries) : 0;
+    const currentStreak = calculateStreak(currentEntries);
+    const currentDetailedScore = currentEntries.length > 0 ? calculateDetailedHealthScore(currentEntries) : null;
+    
+    friendsMap[fromEmail].push({
+      email: currentUser.email,
+      name: currentUser.name,
+      avatar: currentUser.avatar,
+      addedAt: new Date().toISOString(),
+      healthScore: currentHealthScore,
+      streak: currentStreak,
+      level: currentDetailedScore?.level || 'Rookie',
+    });
+    
+    localStorage.setItem(FRIENDS_KEY, JSON.stringify(friendsMap));
+  }
+}
+
+// Reject friend request
+export function rejectFriendRequest(fromEmail: string): void {
+  const email = getCurrentUserEmail();
+  if (!email) return;
+  
+  const requests = localStorage.getItem(FRIEND_REQUESTS_KEY);
+  if (requests) {
+    const allRequests: FriendRequest[] = JSON.parse(requests);
+    const request = allRequests.find(r => r.from === fromEmail && r.to === email);
+    if (request) {
+      request.status = 'rejected';
+      localStorage.setItem(FRIEND_REQUESTS_KEY, JSON.stringify(allRequests));
+    }
+  }
+}
+
+// Check if user is already a friend
+export function isFriend(email: string): boolean {
+  const friends = getFriends();
+  return friends.some(f => f.email === email);
+}
+
+// Check if friend request is pending
+export function hasPendingRequestWith(email: string): boolean {
+  const currentUser = getCurrentUserEmail();
+  if (!currentUser) return false;
+  
+  const requests = localStorage.getItem(FRIEND_REQUESTS_KEY);
+  if (!requests) return false;
+  const allRequests: FriendRequest[] = JSON.parse(requests);
+  
+  return allRequests.some(
+    r => r.status === 'pending' && (
+      (r.from === currentUser && r.to === email) ||
+      (r.from === email && r.to === currentUser)
+    )
+  );
+}
+
+// Get available users to discover (not already friends)
+export function getDiscoverableUsers(): UserProfile[] {
+  const currentUser = getCurrentUserEmail();
+  if (!currentUser) return [];
+  
+  const allUsers = getAllRegisteredUsers();
+  const friends = getFriends();
+  const friendEmails = new Set(friends.map(f => f.email));
+  
+  // Filter out current user and existing friends
+  return allUsers.filter(u => u.email !== currentUser && !friendEmails.has(u.email));
 }

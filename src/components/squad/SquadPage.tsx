@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import { Trophy, Users, MessageCircle, Flame, Target, Zap, Crown, Medal, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Trophy, Users, MessageCircle, Flame, Target, Zap, Crown, Medal, Star, UserPlus, Bell } from 'lucide-react';
+import { FriendsList } from './FriendsList';
+import { DiscoverUsers } from './DiscoverUsers';
+import { getPendingFriendRequests } from '@/lib/store';
 
 interface SquadMember {
   id: string;
@@ -51,7 +54,7 @@ const typeIcons: Record<ChallengeType, typeof Zap> = {
 };
 
 export function SquadPage() {
-  const [activeTab, setActiveTab] = useState<'leaderboard' | 'challenges' | 'chat'>('leaderboard');
+  const [activeTab, setActiveTab] = useState<'leaderboard' | 'challenges' | 'chat' | 'friends' | 'discover'>('discover');
   const [chatMessages, setChatMessages] = useState([
     { id: '1', user: 'Sarah', message: 'Just hit my 10K steps! 🔥', time: '2 min ago' },
     { id: '2', user: 'Mike', message: 'Great job! I\'m at 8.5K', time: '1 min ago' },
@@ -60,6 +63,13 @@ export function SquadPage() {
   const [newMessage, setNewMessage] = useState('');
   const [challenges, setChallenges] = useState<Challenge[]>(mockChallenges);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  // Update pending requests count
+  useEffect(() => {
+    const requests = getPendingFriendRequests();
+    setPendingRequestsCount(requests.length);
+  }, [activeTab]);
 
   const availableChallenges: Omit<Challenge, 'id' | 'progress' | 'participants'>[] = [
     { name: '14-Day Meditation Quest', type: 'Marathon', target: 14, daysLeft: 14 },
@@ -145,23 +155,40 @@ export function SquadPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 bg-muted p-1 rounded-lg">
-        {(['leaderboard', 'challenges', 'chat'] as const).map((tab) => (
+        {(['discover', 'friends', 'leaderboard', 'challenges', 'chat'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 px-4 rounded-md font-medium capitalize transition-all ${
+            className={`flex-1 py-2 px-3 rounded-md font-medium capitalize transition-all text-sm ${
               activeTab === tab
                 ? 'bg-white text-primary shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {tab === 'leaderboard' && <Trophy className="w-4 h-4 inline mr-2" />}
-            {tab === 'challenges' && <Target className="w-4 h-4 inline mr-2" />}
-            {tab === 'chat' && <MessageCircle className="w-4 h-4 inline mr-2" />}
+            {tab === 'discover' && <UserPlus className="w-4 h-4 inline mr-1" />}
+            {tab === 'friends' && (
+              <>
+                <Users className="w-4 h-4 inline mr-1" />
+                {pendingRequestsCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                    {pendingRequestsCount}
+                  </span>
+                )}
+              </>
+            )}
+            {tab === 'leaderboard' && <Trophy className="w-4 h-4 inline mr-1" />}
+            {tab === 'challenges' && <Target className="w-4 h-4 inline mr-1" />}
+            {tab === 'chat' && <MessageCircle className="w-4 h-4 inline mr-1" />}
             {tab}
           </button>
         ))}
       </div>
+
+      {/* Discover Tab */}
+      {activeTab === 'discover' && <DiscoverUsers />}
+
+      {/* Friends Tab */}
+      {activeTab === 'friends' && <FriendsList />}
 
       {/* Leaderboard Tab */}
       {activeTab === 'leaderboard' && (
