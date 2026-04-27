@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Activity, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { api } from '@/lib/api';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -41,28 +40,47 @@ export function LoginPage() {
     
     setIsLoading(true);
     
-    try {
-      // Call backend API to login
-      const response = await api.login(formData.email, formData.password);
-      
-      // Store auth state
-      localStorage.setItem('biosync_auth', JSON.stringify({
-        isAuthenticated: true,
-        user: {
-          email: response.user.email,
-          name: response.user.name,
-          avatar: response.user.avatar,
-          goals: response.user.goals || [],
-          joinedAt: response.user.joinedAt,
-        }
-      }));
-      
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Check if user exists in localStorage (case-insensitive)
+    const users = JSON.parse(localStorage.getItem('biosync_users') || '[]');
+    const existingUser = users.find((u: any) => 
+      u.email.toLowerCase() === formData.email.toLowerCase()
+    );
+    
+    if (!existingUser) {
+      setErrors({ email: 'No account found with this email' });
       setIsLoading(false);
-      navigate('/');
-    } catch (error: any) {
-      setErrors({ email: error.message });
-      setIsLoading(false);
+      return;
     }
+    
+    if (existingUser.password !== formData.password) {
+      setErrors({ password: 'Incorrect password' });
+      setIsLoading(false);
+      return;
+    }
+    
+    // Store auth state
+    localStorage.setItem('biosync_auth', JSON.stringify({
+      isAuthenticated: true,
+      user: {
+        email: existingUser.email,
+        name: existingUser.name,
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + existingUser.email,
+        goals: existingUser.goals || [],
+        joinedAt: existingUser.joinedAt,
+      }
+    }));
+    
+    // Ensure user has a health data store
+    const userHealthKey = `vitalis-health-data-${existingUser.email}`;
+    if (!localStorage.getItem(userHealthKey)) {
+      localStorage.setItem(userHealthKey, JSON.stringify([]));
+    }
+    
+    setIsLoading(false);
+    navigate('/');
   };
 
   const handleDemoLogin = async () => {
