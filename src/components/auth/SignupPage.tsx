@@ -96,6 +96,10 @@ export function SignupPage() {
     users.push(newUser);
     localStorage.setItem('biosync_users', JSON.stringify(users));
     
+    // Initialize empty health data for new user
+    const userHealthKey = `vitalis-health-data-${formData.email}`;
+    localStorage.setItem(userHealthKey, JSON.stringify([]));
+    
     // Store auth state
     localStorage.setItem('biosync_auth', JSON.stringify({
       isAuthenticated: true,

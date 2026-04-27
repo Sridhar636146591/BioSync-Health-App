@@ -174,9 +174,18 @@ export interface Correlation {
 
 const STORAGE_KEY = 'vitalis-health-data';
 
+// Get user-specific storage key
+function getUserStorageKey(): string {
+  const auth = localStorage.getItem('biosync_auth');
+  if (!auth) return STORAGE_KEY;
+  const { user } = JSON.parse(auth);
+  return `${STORAGE_KEY}-${user.email}`;
+}
+
 function loadEntries(): HealthEntry[] {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    const key = getUserStorageKey();
+    const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : [];
   } catch {
     return [];
@@ -184,7 +193,8 @@ function loadEntries(): HealthEntry[] {
 }
 
 function saveEntries(entries: HealthEntry[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  const key = getUserStorageKey();
+  localStorage.setItem(key, JSON.stringify(entries));
 }
 
 export function getAllEntries(): HealthEntry[] {

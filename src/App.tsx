@@ -34,7 +34,15 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
-    seedDemoData()
+    // Only seed demo data if user is logged in as demo user
+    const auth = localStorage.getItem('biosync_auth')
+    if (auth) {
+      const { user } = JSON.parse(auth)
+      // Seed demo data only for demo user
+      if (user.email === 'demo@biosync.health') {
+        seedDemoData()
+      }
+    }
     setAuthChecked(true)
   }, [])
 

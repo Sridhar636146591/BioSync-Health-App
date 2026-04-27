@@ -71,6 +71,12 @@ export function LoginPage() {
       }
     }));
     
+    // Ensure user has a health data store
+    const userHealthKey = `vitalis-health-data-${existingUser.email}`;
+    if (!localStorage.getItem(userHealthKey)) {
+      localStorage.setItem(userHealthKey, JSON.stringify([]));
+    }
+    
     setIsLoading(false);
     navigate('/');
   };
@@ -87,6 +93,14 @@ export function LoginPage() {
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo',
       }
     }));
+    
+    // Seed demo data for demo user
+    const userHealthKey = 'vitalis-health-data-demo@biosync.health';
+    if (!localStorage.getItem(userHealthKey)) {
+      // Import and seed demo data
+      const { seedDemoData } = await import('@/lib/store');
+      seedDemoData();
+    }
     
     setIsLoading(false);
     navigate('/');
