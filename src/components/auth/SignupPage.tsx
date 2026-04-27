@@ -67,55 +67,73 @@ export function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    setIsLoading(true);
+    console.log('Signup form submitted', formData);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Check if user already exists
-    const users = JSON.parse(localStorage.getItem('biosync_users') || '[]');
-    const existingUser = users.find((u: any) => 
-      u.email.toLowerCase() === formData.email.toLowerCase()
-    );
-    
-    if (existingUser) {
-      setErrors({ email: 'An account with this email already exists' });
-      setIsLoading(false);
+    if (!validateStep1()) {
+      console.log('Validation failed', errors);
       return;
     }
     
-    // Create new user
-    const newUser = {
-      email: formData.email.toLowerCase(),
-      password: formData.password,
-      name: formData.name,
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + formData.email,
-      goals: formData.healthGoals,
-      joinedAt: new Date().toISOString(),
-    };
+    setIsLoading(true);
     
-    // Save to users list
-    users.push(newUser);
-    localStorage.setItem('biosync_users', JSON.stringify(users));
-    
-    // Initialize empty health data for new user
-    const userHealthKey = `vitalis-health-data-${formData.email.toLowerCase()}`;
-    localStorage.setItem(userHealthKey, JSON.stringify([]));
-    
-    // Store auth state
-    localStorage.setItem('biosync_auth', JSON.stringify({
-      isAuthenticated: true,
-      user: {
-        email: newUser.email,
-        name: newUser.name,
-        avatar: newUser.avatar,
-        goals: newUser.goals,
-        joinedAt: newUser.joinedAt,
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Check if user already exists
+      const users = JSON.parse(localStorage.getItem('biosync_users') || '[]');
+      console.log('Existing users:', users);
+      
+      const existingUser = users.find((u: any) => 
+        u.email.toLowerCase() === formData.email.toLowerCase()
+      );
+      
+      if (existingUser) {
+        setErrors({ email: 'An account with this email already exists' });
+        setIsLoading(false);
+        return;
       }
-    }));
-    
-    setIsLoading(false);
-    navigate('/');
+      
+      // Create new user
+      const newUser = {
+        email: formData.email.toLowerCase(),
+        password: formData.password,
+        name: formData.name,
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + formData.email,
+        goals: formData.healthGoals,
+        joinedAt: new Date().toISOString(),
+      };
+      
+      console.log('Creating new user:', newUser);
+      
+      // Save to users list
+      users.push(newUser);
+      localStorage.setItem('biosync_users', JSON.stringify(users));
+      
+      // Initialize empty health data for new user
+      const userHealthKey = `vitalis-health-data-${formData.email.toLowerCase()}`;
+      localStorage.setItem(userHealthKey, JSON.stringify([]));
+      
+      // Store auth state
+      localStorage.setItem('biosync_auth', JSON.stringify({
+        isAuthenticated: true,
+        user: {
+          email: newUser.email,
+          name: newUser.name,
+          avatar: newUser.avatar,
+          goals: newUser.goals,
+          joinedAt: newUser.joinedAt,
+        }
+      }));
+      
+      console.log('User created successfully');
+      setIsLoading(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Signup error:', error);
+      setErrors({ email: 'Failed to create account. Please try again.' });
+      setIsLoading(false);
+    }
   };
 
   const toggleGoal = (goal: string) => {
