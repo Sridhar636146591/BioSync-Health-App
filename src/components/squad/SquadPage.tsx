@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Trophy, Users, MessageCircle, Flame, Target, Zap, Crown, Medal, Star, UserPlus, Bell } from 'lucide-react';
 import { FriendsList } from './FriendsList';
 import { DiscoverUsers } from './DiscoverUsers';
-import { getPendingFriendRequests } from '@/lib/store';
+import { getPendingFriendRequests, getFriends, getUserProfile, calculateDetailedHealthScore, getLast30DaysEntries } from '@/lib/store';
 
 interface SquadMember {
   id: string;
@@ -64,12 +64,34 @@ export function SquadPage() {
   const [challenges, setChallenges] = useState<Challenge[]>(mockChallenges);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [friends, setFriends] = useState(getFriends());
 
-  // Update pending requests count
-  useEffect(() => {
-    const requests = getPendingFriendRequests();
-    setPendingRequestsCount(requests.length);
-  }, [activeTab]);
+  // Get current user data
+  const currentUser = getUserProfile();
+  const currentUserEntries = getLast30DaysEntries();
+  const currentUserScore = calculateDetailedHealthScore(currentUserEntries);
+
+  // Build squad members list with current user and friends
+  const squadMembers: SquadMember[] = [
+    {
+      id: 'you',
+      name: currentUser?.name || 'You',
+      avatar: currentUser?.name?.charAt(0).toUpperCase() || 'Y',
+      score: currentUserScore.overall,
+      streak: currentUserScore.streak,
+      level: currentUserScore.level,
+    },
+    ...friends.map(friend => ({
+      id: friend.email,
+      name: friend.name,
+      avatar: friend.name.charAt(0).toUpperCase(),
+      score: friend.healthScore || 0,
+      streak: friend.streak || 0,
+      level: (friend.level as 'Rookie' | 'Warrior' | 'Legend' | 'Master') || 'Rookie',
+    })),
+  ];
+
+  const sortedMembers = [...squadMembers].sort((a, b) => b.score - a.score);
 
   const availableChallenges: Omit<Challenge, 'id' | 'progress' | 'participants'>[] = [
     { name: '14-Day Meditation Quest', type: 'Marathon', target: 14, daysLeft: 14 },
@@ -80,8 +102,6 @@ export function SquadPage() {
     { name: 'Weekend Warrior Battle', type: 'Battle', target: 15000, daysLeft: 3 },
   ];
   const [selectedChallenge, setSelectedChallenge] = useState<number | null>(null);
-
-  const sortedMembers = [...mockSquadMembers].sort((a, b) => b.score - a.score);
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
@@ -200,40 +220,57 @@ export function SquadPage() {
                 Weekly Leaderboard
               </h3>
             </div>
-            <div className="divide-y divide-border">
-              {sortedMembers.map((member, index) => (
-                <div
-                  key={member.id}
-                  className={`p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors ${
-                    member.name === 'You' ? 'bg-primary/5' : ''
-                  }`}
+            {squadMembers.length === 1 ? (
+              <div className="p-8 text-center">
+                <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="text-muted-foreground">No friends in your squad yet</p>
+                <button
+                  onClick={() => setActiveTab('discover')}
+                  className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
                 >
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm
-                    ${index === 0 ? 'bg-amber-100 text-amber-700' : 
+                  Discover Friends
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {sortedMembers.map((member, index) => (
+                  <div
+                    key={member.id}
+                    className={`p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors ${
+                      member.id === 'you' ? 'bg-primary/5' : ''
+                    }`}
+                  >
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+                      index === 0 ? 'bg-amber-100 text-amber-700' : 
                       index === 1 ? 'bg-gray-100 text-gray-700' : 
-                      index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-muted text-muted-foreground'}">
-                    {index + 1}
-                  </div>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${levelColors[member.level]}`}>
-                    {member.avatar}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{member.name}</span>
-                      {index === 0 && <Medal className="w-4 h-4 text-amber-500" />}
+                      index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {index + 1}
                     </div>
-                    <span className="text-xs text-muted-foreground">{member.level}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-lg">{member.score}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Flame className="w-3 h-3 text-red-500" />
-                      {member.streak} day streak
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${levelColors[member.level]}`}>
+                      {member.avatar}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{member.name}</span>
+                        {member.id === 'you' && (
+                          <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">You</span>
+                        )}
+                        {index === 0 && member.id !== 'you' && <Medal className="w-4 h-4 text-amber-500" />}
+                      </div>
+                      <span className="text-xs text-muted-foreground">{member.level}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-lg">{member.score}</div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Flame className="w-3 h-3 text-red-500" />
+                        {member.streak} day streak
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
