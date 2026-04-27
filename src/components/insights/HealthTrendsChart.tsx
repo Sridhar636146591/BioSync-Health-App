@@ -7,6 +7,13 @@ interface HealthTrendsChartProps {
   entries: HealthEntry[];
 }
 
+interface TrendData {
+  date: string;
+  sleep: number;
+  mood: number;
+  forecast?: boolean;
+}
+
 export function HealthTrendsChart({ entries }: HealthTrendsChartProps) {
   const data = useMemo(() => {
     if (entries.length < 7) return [];
@@ -14,7 +21,7 @@ export function HealthTrendsChart({ entries }: HealthTrendsChartProps) {
     const last14Days = entries.slice(-14);
     
     // Calculate 3-day moving average for smoothing
-    const smoothed = last14Days.map((entry, index) => {
+    const smoothed: TrendData[] = last14Days.map((entry, index) => {
       const start = Math.max(0, index - 2);
       const slice = last14Days.slice(start, index + 1);
       
