@@ -7,9 +7,9 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "npx vite",
     "build": "tsc && npx vite build",
-    "preview": "vite preview"
+    "preview": "npx vite preview"
   },
   "dependencies": {
     "react": "^18.2.0",
